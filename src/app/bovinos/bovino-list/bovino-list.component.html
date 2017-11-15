@@ -1,0 +1,22 @@
+<div class="row">
+  <div class="col-md-5">
+    <h2>Expediente de bovino</h2>
+    <ul class="list-group">
+      <li class="list-group-item"
+        *ngFor="let bovino of bovinos"
+        (click)="selectbovino(bovino)"
+        [class.active]="bovino === selectedbovino">
+        {{bovino.identificador}}
+      </li>
+    </ul>
+    <button class="btn btn-warning" (click)="createNewbovino()">Nuevo registro</button>
+  </div>
+  <div class="col-md-5 col-md-offset-2">
+    <bovino-details
+      [bovino]="selectedbovino"
+      [createHandler]="addbovino"
+      [updateHandler]="updatebovino"
+      [deleteHandler]="deletebovino">
+    </bovino-details>
+  </div>
+</div>

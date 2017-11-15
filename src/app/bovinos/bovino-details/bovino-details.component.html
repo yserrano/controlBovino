@@ -1,0 +1,41 @@
+<div *ngIf="bovino" class="row">
+  <div class="col-md-12">
+    <h2 *ngIf="bovino._id">Detalles del bovino</h2>
+    <h2 *ngIf="!bovino._id">Nuevo registro</h2>
+  </div>
+</div>
+<div *ngIf="bovino" class="row">
+  <form class="col-md-12">
+    <div class="form-group">
+      <label for="bovino-identificador">Identificador</label>
+      <input class="form-control" name="bovino-identificador" [(ngModel)]="bovino.identificador" placeholder="identificador"/>
+    </div>
+    <div class="form-group">
+      <label for="bovino-edad">Edad</label>
+      <input class="form-control" name="bovino-edad" [(ngModel)]="bovino.edad" placeholder="edad"/>
+    </div>
+	<div class="form-group">
+      <label for="bovino-peso">Peso actual</label>
+      <input class="form-control" name="bovino-peso" [(ngModel)]="bovino.peso" placeholder="kilogramos"/>
+    </div>
+    <div class="form-group">
+      <label for="bovino-edadEnfermedad">Enfermedad a la edad de</label>
+      <input class="form-control" name="bovino-edadEnfermedad" [(ngModel)]="bovino.enfermedad.edadEnfermedad" placeholder="edadE"/>
+    </div>
+    <div class="form-group">
+      <label for="bovino-pesoEnfermedad">Peso del bovino cuando enfermó</label>
+      <input class="form-control" name="bovino-pesoEnfermedad" [(ngModel)]="bovino.enfermedad.pesoEnfermedad" placeholder="pesoE"/>
+    </div>
+	<div class="form-group">
+      <label for="bovino-vacuna">Nombre de la vacuna</label>
+      <input class="form-control" name="bovino-vacuna" [(ngModel)]="bovino.tratamiento.vacuna" placeholder="vacuna"/>
+    </div>
+    <div class="form-group">
+      <label for="bovino-fechaVacuna">Fecha en la que se aplicó la vacuna</label>
+      <input class="form-control" name="bovino-fechaVacuna" [(ngModel)]="bovino.tratamiento.fechaVacuna" placeholder="fechaVacuna"/>
+    </div>
+    <button class="btn btn-primary" *ngIf="!bovino._id" (click)="createbovino(bovino)">Create</button>
+    <button class="btn btn-info" *ngIf="bovino._id" (click)="updatebovino(bovino)">Update</button>
+    <button class="btn btn-danger" *ngIf="bovino._id" (click)="deletebovino(bovino._id)">Delete</button>
+  </form>
+</div>
