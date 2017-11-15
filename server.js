@@ -1,70 +1,114 @@
-var express = require('express');
-var app = express();
-var mongojs = require('mongojs');
-var db = mongojs('listabovinos',['listabovinos']);
-var bodyParser = require('body-parser');
+var express = require("express");
+var bodyParser = require("body-parser");
+var mongodb = require("mongodb");
+var ObjectID = mongodb.ObjectID;
 
-// Static es para decirle a server donde buscar los archivos estaticos
-//como los html
-app.use(express.static(__dirname + "/public"));
+var BOVINOS_COLLECTION = "bovinos";
+
+var app = express();
 app.use(bodyParser.json());
 
-app.get('/listabovinos', function(req,res){
-    console.log("Recibi una solicitud GET")
-    
-    //Get request
-    db.listabovinos.find(function(err,docs){
-        console.log(docs);
-        res.json(docs);
-        
-    });
-    
-});
+// Create link to Angular build directory
+var distDir = __dirname + "/dist/";
+app.use(express.static(distDir));
 
-app.post('/listabovinos',function(req,res){
-    console.log(req.body); 
-    db.listabovinos.insert(req.body,function(err,doc){
-        res.json(doc);
-        
-    }) 
-    
-});
+// Create a database variable outside of the database connection callback to reuse the connection pool in your app.
+var db;
 
+// Connect to the database before starting the application server.
+mongodb.MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
+  if (err) {
+    console.log(err);
+    process.exit(1);
+  }
 
+  // Save database object from the callback for reuse.
+  db = database;
+  console.log("Database connection ready");
 
-app.delete('/listabovinos/:id', function (req, res) {
-  var id = req.params.id;
-  console.log(id);
-  db.listabovinos.remove({_id: mongojs.ObjectId(id)}, function (err, doc) { // Puse 'mongojs.ObjectId(id)' pero deberia ir sin corchetes, es que como no ocupamos el de delete.
-    res.json(doc);
+  // Initialize the app.
+  var server = app.listen(process.env.PORT || 8080, function () {
+    var port = server.address().port;
+    console.log("App now running on port", port);
   });
 });
 
+// BOVINOS API ROUTES BELOW
 
-app.get('/listabovinos/:id', function (req, res) {
-  var id = req.params.id;
-  console.log(id);
-  db.listabovinos.findOne({_id: mongojs.ObjectId(id)}, function (err, doc) {
-    res.json(doc);
-  });
-});
+// Generic error handler used by all endpoints.
+function handleError(res, reason, message, code) {
+  console.log("ERROR: " + reason);
+  res.status(code || 500).json({"error": message});
+}
 
-app.put('/listabovinos/:id', function (req, res) {
-  var id = req.params.id;
-  console.log(req.body.identificador);
-  db.listabovinos.findAndModify({
-    query: {_id: mongojs.ObjectId(id)},
-    update: {$set: {identificador: req.body.identificador, vacuna: req.body.vacuna, fecha: req.body.fecha}},
-    new: true}, function (err, doc) {
-      res.json(doc);
+/*  "/api/bovino"
+ *    GET: finds all bovino
+ *    POST: creates a new bovino
+ */
+
+app.get("/api/bovinos", function(req, res) {
+  db.collection(BOVINOS_COLLECTION).find({}).toArray(function(err, docs) {
+    if (err) {
+      handleError(res, err.message, "Ha fallado obtener el bovino.");
+    } else {
+      res.status(200).json(docs);
     }
-  );
+  });
 });
 
+app.post("/api/bovinos", function(req, res) {
+  var newBovino = req.body;
+  newBovino.createDate = new Date();
 
+  if (!req.body.identificador) {
+    handleError(res, "Invalid user input", "Debe ingresar un identificador para el bovino.", 400);
+  }
 
-app.listen(3001);
-console.log("Server running on port 3001");
+  db.collection(BOVINOS_COLLECTION).insertOne(newBovino, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "No se ha podido hacer el registro");
+    } else {
+      res.status(201).json(doc.ops[0]);
+    }
+  });
+});
 
-// Para ver esos mensajes se corre node server en CMD y en el  navegador
-// localhost:3000
+/*  "/api/bovino/:id"
+ *    GET: find bovino by id
+ *    PUT: update bovino by id
+ *    DELETE: deletes bovino by id
+ */
+
+app.get("/api/bovinos/:id", function(req, res) {
+  db.collection(BOVINOS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Ha fallado obtener el bovino");
+    } else {
+      res.status(200).json(doc);
+    }
+  });
+});
+
+app.put("/api/bovinos/:id", function(req, res) {
+  var updateDoc = req.body;
+  delete updateDoc._id;
+
+  db.collection(BOVINOS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Ha fallado actualizar el bovino.");
+    } else {
+      updateDoc._id = req.params.id;
+      res.status(200).json(updateDoc);
+    }
+  });
+});
+
+app.delete("/api/bovinos/:id", function(req, res) {
+  db.collection(BOVINOS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+    if (err) {
+      handleError(res, err.message, "Ha fallado eliminar el bovino.");
+    } else {
+      res.status(200).json(req.params.id);
+    }
+  });
+});
